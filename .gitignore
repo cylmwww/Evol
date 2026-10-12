@@ -1,0 +1,12 @@
+__pycache__/
+/.runtime/
+/docs/local/
+
+/build/
+/dist/
+/.venv/
+*.egg-info/
+/local/
+.env
+.env.*
+!.env.example
