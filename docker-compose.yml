@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: evol
+      POSTGRES_USER: evol
+      POSTGRES_PASSWORD: evol-local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evol"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  evol:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      EVOL_HOST: 0.0.0.0
+      EVOL_DATABASE_URL: postgresql://evol:evol-local@postgres:5432/evol
+      EVOL_REDIS_URL: redis://redis:6379/0
+      EVOL_ASYNC_WORKERS: 4
+      EVOL_SKILLS_DIR: /app/skills
+      EVOL_AUTH_REQUIRED: "true"
+      EVOL_AUTH_SECRET: ${EVOL_AUTH_SECRET:-local-only-change-this-secret-123456}
+      EVOL_BOOTSTRAP_ADMIN_USERNAME: ${EVOL_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      EVOL_BOOTSTRAP_ADMIN_PASSWORD: ${EVOL_BOOTSTRAP_ADMIN_PASSWORD:-evol-local-admin}
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
